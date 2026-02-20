@@ -1,0 +1,205 @@
+const realBsod = document.getElementById("real-bsod");
+const realPercent = document.getElementById("real-percent");
+const noOs = document.getElementById("no-os");
+
+// inject a progress bar into the real BSOD content
+(function addProgressBar() {
+  const content = realBsod.querySelector(".content");
+  const bar = document.createElement("div");
+  bar.className = "progress-bar";
+  bar.innerHTML = '<div class="progress-fill" id="progress-fill"></div>';
+  content.insertBefore(bar, content.querySelector(".qr-box"));
+})();
+const progressFill = document.getElementById("progress-fill");
+
+let inFullscreenBsod = false;
+let percent = 0;
+let tickHandle = null;
+let currentInterval = 120; // base interval in ms for updates
+let variableSpeed = false;
+
+function stepProgress() {
+  // determine increment size: small random base, larger when slower interval
+  let increment = 1 + Math.floor(Math.random() * 3); // 1-3 normally
+  // if below 66% keep it a bit faster
+  if (percent < 66) {
+    increment += 2; // speed up early
+  }
+  // if variableSpeed enabled (after 66%) vary increments a lot
+  if (variableSpeed) {
+    increment = Math.max(1, Math.floor((Math.random() * 8) - 1)); // -1..7 -> clamp to >=1
+  }
+  percent = Math.min(100, percent + increment);
+  progressFill.style.width = percent + "%";
+  realPercent.textContent = `${percent}% complete`;
+
+  // when hitting 66%, enable variable/randomized timing and increments
+  if (!variableSpeed && percent >= 66 && percent < 100) {
+    variableSpeed = true;
+    // make interval unpredictable
+    currentInterval = 80 + Math.floor(Math.random() * 220);
+  }
+
+  // if variableSpeed, occasionally jump the interval randomly
+  if (variableSpeed) {
+    currentInterval = 40 + Math.floor(Math.random() * 400);
+  } else {
+    // keep it fairly fast but consistent before 66%
+    currentInterval = 70 + Math.floor(Math.random() * 120);
+  }
+
+  if (percent >= 100) {
+    completeSequence();
+  } else {
+    tickHandle = setTimeout(stepProgress, currentInterval);
+  }
+}
+
+async function enterFullscreen() {
+  const elem = document.documentElement;
+  if (elem.requestFullscreen) {
+    try {
+      await elem.requestFullscreen();
+    } catch (_) {
+      /* ignore */
+    }
+  }
+}
+
+async function exitFullscreen() {
+  if (document.fullscreenElement) {
+    try {
+      await document.exitFullscreen();
+    } catch (_) {
+      /* ignore */
+    }
+  }
+}
+
+function showRealBsod() {
+  inFullscreenBsod = true;
+  realBsod.classList.add("active");
+  percent = 0;
+  variableSpeed = false;
+  progressFill.style.width = "0%";
+  realPercent.textContent = "0% complete";
+  if (tickHandle) clearTimeout(tickHandle);
+  // start fast
+  currentInterval = 60 + Math.floor(Math.random() * 80);
+  tickHandle = setTimeout(stepProgress, currentInterval);
+  enterFullscreen();
+  // hide any previously shown no-os screen
+  noOs.classList.remove("active");
+  noOs.setAttribute("aria-hidden", "true");
+}
+
+function hideRealBsod() {
+  inFullscreenBsod = false;
+  realBsod.classList.remove("active");
+  if (tickHandle) {
+    clearTimeout(tickHandle);
+    tickHandle = null;
+  }
+  exitFullscreen();
+}
+
+/* sequence when progress reaches 100%:
+   - stop ticking
+   - wait ~2s
+   - run a quick "reboot" flicker on the BSOD (abrupt, not smooth)
+   - then hide BSOD, show black screen and type boot-lines
+   - keep fullscreen active (do not call exitFullscreen)
+*/
+function completeSequence() {
+  if (tickHandle) {
+    clearTimeout(tickHandle);
+    tickHandle = null;
+  }
+
+  // wait ~2s to simulate pause before reboot
+  setTimeout(() => {
+    // add flicker/reboot class to BSOD for abrupt transition
+    realBsod.classList.add("reboot-flicker");
+
+    // short flicker then swap screens
+    setTimeout(() => {
+      realBsod.classList.remove("active");
+      realBsod.classList.remove("reboot-flicker");
+      noOs.classList.add("active");
+      noOs.setAttribute("aria-hidden", "false");
+
+      // keep fullscreen active (do not exitFullscreen)
+      inFullscreenBsod = true;
+
+      // start typing boot lines
+      startBootSequence();
+    }, 450); // flicker duration (brief)
+  }, 2000); // 2 second wait before reboot effect
+}
+
+/* Boot lines typing sequence */
+const bootLines = [
+  "Initializing hardware configuration...",
+  "Detecting storage devices... [OK]",
+  "Loading boot manager...",
+  "Searching for bootable media...",
+  "ERROR: No bootable device found.",
+  "Error: No Operating System found"
+];
+
+async function startBootSequence() {
+  const container = document.querySelector("#no-os .boot-lines");
+  if (!container) return;
+  container.textContent = ""; // clear
+
+  // type each line with a short pause; use abrupt instant additions to avoid smoothness
+  for (let i = 0; i < bootLines.length; i++) {
+    await typeLine(container, bootLines[i]);
+    // after each line, add a short randomized pause (more machine-like)
+    await new Promise(r => setTimeout(r, 250 + Math.floor(Math.random() * 400)));
+  }
+}
+
+/* type a line instantly character-by-character but relatively fast and blocky */
+function typeLine(container, text) {
+  return new Promise((resolve) => {
+    let idx = 0;
+    const step = () => {
+      // add a few chars at once for a blocky effect
+      const chunk = 2 + Math.floor(Math.random() * 3); // 2-4 chars
+      container.textContent += text.slice(idx, idx + chunk);
+      idx += chunk;
+      // instant jump-like steps, no smooth timing
+      if (idx < text.length) {
+        setTimeout(step, 40 + Math.floor(Math.random() * 60));
+      } else {
+        container.textContent += "\n";
+        resolve();
+      }
+    };
+    step();
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  // Toggle fullscreen only with M/m (do not start or stop BSOD)
+  if (e.key === "m" || e.key === "M") {
+    if (!document.fullscreenElement) {
+      enterFullscreen();
+    } else {
+      exitFullscreen();
+    }
+  }
+
+  // play BSOD sequence when B/b is pressed (always starts it)
+  if (e.key === "b" || e.key === "B") {
+    showRealBsod();
+  }
+});
+
+/* If user exits fullscreen manually, keep the “real” BSOD visible but non-fullscreen */
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && inFullscreenBsod) {
+    // keep state but nothing extra to do
+  }
+});
