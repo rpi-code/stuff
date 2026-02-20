@@ -1,0 +1,227 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* keep text rendering smooth while UI elements are blocky */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+/* Fake BSOD inside the browser window */
+#fake-bsod {
+  position: fixed;
+  inset: 0;
+  background: #0063b1; /* slightly darker, closer to real */
+  color: #fff;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0; /* flush to top-left */
+}
+
+#fake-bsod .content {
+  max-width: 480px;
+  /* boxy container with sharp edges */
+  border: 4px solid rgba(255,255,255,0.06);
+  padding: 20px;
+  box-sizing: border-box;
+
+  /* position the container flush to the top-left corner */
+  align-self: flex-start;
+  margin-top: 0;
+  margin-left: 0;
+  text-align: left;
+}
+
+/* Real fullscreen BSOD overlay (hidden until activated) */
+#real-bsod {
+  position: fixed;
+  inset: 0;
+  background: #0063b1;
+  color: #fff;
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0; /* flush to top-left */
+  z-index: 9999;
+}
+
+#real-bsod.active {
+  display: flex;
+}
+
+#real-bsod .content {
+  max-width: 520px;
+  border: 6px solid rgba(255,255,255,0.06);
+  padding: 20px;
+  box-sizing: border-box;
+
+  /* position the container flush to the top-left corner */
+  align-self: flex-start;
+  margin-top: 0;
+  margin-left: 0;
+  text-align: left;
+}
+
+/* make emoji large but crisp */
+.emoji {
+  font-size: 64px;
+  margin-bottom: 24px;
+  line-height: 1;
+}
+
+/* keep text smooth and legible (not pixelated) */
+.main-text {
+  font-size: 18px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* percentage text kept readable */
+.percent {
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+
+/* QR box becomes a solid sharp square */
+.qr-box {
+  width: 96px;
+  height: 96px;
+  border: 8px solid #fff;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* info text remains normal */
+.info-text {
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 320px;
+}
+
+/* Make sure everything fits nicely on small screens */
+@media (max-width: 480px) {
+  .emoji {
+    font-size: 48px;
+  }
+  .main-text,
+  .percent {
+    font-size: 16px;
+  }
+  .info-text {
+    font-size: 11px;
+  }
+  .qr-box {
+    width: 80px;
+    height: 80px;
+    border-width: 7px;
+  }
+}
+
+/* Progress bar inside real BSOD - make it blocky and instant (no smooth transition) */
+.progress-bar {
+  width: 100%;
+  height: 14px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 0; /* remove rounding for blocky look */
+  overflow: hidden;
+  margin-bottom: 20px;
+  max-width: 520px;
+  border: 2px solid rgba(255,255,255,0.08);
+  box-sizing: border-box;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: rgba(255,255,255,0.95);
+  transition: none; /* remove smooth transition so the bar jumps */
+  will-change: width;
+}
+
+/* also remove rounded corners for containers and elements to look rigid */
+#fake-bsod .content,
+#real-bsod .content,
+.qr-box,
+.progress-bar {
+  border-radius: 0;
+}
+
+/* Black screen shown after completion */
+#no-os {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0;
+  z-index: 10000;
+}
+
+#no-os.active {
+  display: flex;
+}
+
+/* content split: heading and boot log */
+.no-os-content {
+  font-family: "Courier New", monospace;
+  font-size: 18px;
+  letter-spacing: 1px;
+  padding: 12px 20px;
+  text-align: left;
+  max-width: 720px;
+  width: calc(100% - 64px);
+  box-sizing: border-box;
+
+  /* position the boot text flush to the top-left of the screen */
+  align-self: flex-start;
+  margin-top: 0;
+  margin-left: 0;
+}
+
+
+
+/* boot-lines are monospace preformatted log lines */
+.boot-lines {
+  white-space: pre-wrap;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.3;
+  color: #ddd;
+  background: transparent;
+  margin-top: 6px;
+}
+
+/* abrupt reboot/flicker effect for BSOD to simulate reboot (not smooth) */
+@keyframes bsod-flicker {
+  0% { opacity: 1; filter: none; transform: none; }
+  10% { opacity: 0; filter: none; transform: translateY(2px); }
+  20% { opacity: 1; transform: none; }
+  30% { opacity: 0; transform: translateY(-2px); }
+  40% { opacity: 1; transform: none; }
+  60% { opacity: 0; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+
+/* apply the flicker quickly and then collapse the BSOD (abrupt) */
+#real-bsod.reboot-flicker {
+  animation: bsod-flicker 0.45s steps(1, end) forwards;
+}
+
+/* ensure progress fill and other transitions stay blocky (no easing) */
+.progress-fill {
+  transition: none;
+}
+
+/* keep no-os immediate appearance (no fade) */
+#no-os,
+#real-bsod {
+  transition: none;
+}
