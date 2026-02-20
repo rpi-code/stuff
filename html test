@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Fake BSOD inside the normal page -->
+  <div id="fake-bsod">
+    <div class="content">
+      <div class="emoji">:(</div>
+      <div class="main-text">
+        Your PC ran into a problem and needs to restart. We’re just collecting some error info, and then we’ll restart for you.
+      </div>
+      <div class="percent">0% complete</div>
+      <div class="qr-box"></div>
+      <div class="info-text">
+        For more information about this issue and possible fixes, visit https://www.fake-support.example<br /><br />
+        If you call a support person, give them this info:<br />
+        Stop code: FAKE_BSOD_PREVIEW
+      </div>
+    </div>
+  </div>
+
+  <!-- “Real” fullscreen BSOD -->
+  <div id="real-bsod">
+    <div class="content">
+      <div class="emoji">:(</div>
+      <div class="main-text">
+        Your PC ran into a problem and needs to restart. We’re just collecting some error info, and then we’ll restart for you.
+      </div>
+      <div class="percent" id="real-percent">0% complete</div>
+      <div class="qr-box"></div>
+      <div class="info-text">
+        For more information about this issue and possible fixes, visit https://www.windows.com/stopcode<br /><br />
+        If you call a support person, give them this info:<br />
+        Stop code: CRITICAL_PROCESS_DIED
+      </div>
+    </div>
+  </div>
+
+  <!-- Black screen shown after BSOD completes -->
+  <div id="no-os" aria-hidden="true">
+    <div class="no-os-content">
+      <pre class="boot-lines" aria-live="polite">Error: No Operating System found
+
+</pre>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
